@@ -1,36 +1,37 @@
 .navbar {
-  background-color: #2365e9;
-  color: white;
-  padding: 12px 20px;
+  background-color: 	#e8f5e9;
+  padding: 14px 24px;
   position: sticky;
   top: 0;
   z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .navbar-container {
   max-width: 1200px;
-  margin: auto;
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .navbar-logo {
-  width: 120px;
+  width: 140px;
 }
 
 .navbar-links {
   display: flex;
-  gap: 16px;
+  gap: 20px;
 }
 
 .navbar-link {
-  color: rgb(0, 0, 0);
-  font-weight: 800;
+  color: #444;
+  font-weight: 600;
   text-decoration: none;
-  transition: opacity 0.2s ease-in-out;
+  font-size: 1rem;
+  transition: color 0.2s ease;
 }
 
 .navbar-link:hover {
-  opacity: 0.7;
+  color: #2365e9; /* subtle accent color */
 }
