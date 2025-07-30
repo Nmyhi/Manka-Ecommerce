@@ -11,7 +11,8 @@ const Navbar = () => {
           <img src={logo} alt="Manka Logo" className="navbar-logo" />
         </Link>
         <div className="navbar-links">
-          <Link to="/" className="navbar-link">Shop</Link>
+          <Link to="/account" className="navbar-link">Account</Link>
+          <Link to="/shop" className="navbar-link">Shop</Link>
           <Link to="/cart" className="navbar-link">Cart</Link>
           <Link to="/checkout" className="navbar-link">Checkout</Link>
         </div>
