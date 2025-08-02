@@ -1,22 +1,32 @@
-import React, { useState } from 'react';
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import React, { useState, useEffect } from 'react';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  onAuthStateChanged,
+  signOut
+} from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import './Auth.css';
 
-const Auth = () => {
+const Account = () => {
+  const [user, setUser] = useState(null);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, setUser);
+    return () => unsubscribe();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        alert('Logged in!');
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
-        alert('Signed up!');
       }
     } catch (err) {
       alert(err.message);
@@ -26,11 +36,25 @@ const Auth = () => {
   const handleGoogleLogin = async () => {
     try {
       await signInWithPopup(auth, googleProvider);
-      alert('Logged in with Google!');
     } catch (err) {
       alert(err.message);
     }
   };
+
+  const handleLogout = () => {
+    signOut(auth);
+  };
+
+  if (user) {
+    return (
+      <div className="auth-container">
+        <h2>Welcome, {user.displayName || user.email}</h2>
+        {user.photoURL && <img src={user.photoURL} alt="Profile" className="navbar-avatar" />}
+        <p>Email: {user.email}</p>
+        <button onClick={handleLogout}>Log Out</button>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-container">
@@ -50,4 +74,4 @@ const Auth = () => {
   );
 };
 
-export default Auth;
+export default Account;
