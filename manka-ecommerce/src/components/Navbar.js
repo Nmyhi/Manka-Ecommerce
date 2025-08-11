@@ -1,19 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import logo from '../logo.png';
 import './Navbar.css';
 
 const Navbar = () => {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
-  }, []);
+  const { user } = useAuth();
 
   return (
     <nav className="navbar">
