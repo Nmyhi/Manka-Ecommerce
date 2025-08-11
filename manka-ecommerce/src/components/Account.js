@@ -10,8 +10,10 @@ import {
   signOut,
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import './Auth.css';
 
+const db = getFirestore();
 
 const Account = () => {
   const { user, setUser } = useAuth();
@@ -20,7 +22,6 @@ const Account = () => {
   const [password, setPassword] = useState('');
   const [profileImage, setProfileImage] = useState(null);
 
-  // shipping/profile fields
   const [details, setDetails] = useState({
     fullName: '',
     phone: '',
@@ -33,10 +34,18 @@ const Account = () => {
   });
 
   useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, setUser);
-  return () => unsubscribe();
-}, [setUser]);
-
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const docRef = doc(db, 'users', currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setDetails(docSnap.data());
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [setUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,10 +72,15 @@ const Account = () => {
     signOut(auth);
   };
 
-  const handleDetailsSubmit = (e) => {
+  const handleDetailsSubmit = async (e) => {
     e.preventDefault();
-    alert('Details saved (implement Firestore storage here)');
-    // future: store in Firestore at `users/{uid}/profile`
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'users', user.uid), details);
+      alert('Details saved!');
+    } catch (err) {
+      alert('Error saving details: ' + err.message);
+    }
   };
 
   const handleChange = (e) => {
@@ -74,52 +88,50 @@ const Account = () => {
   };
 
   const handleProfileUpload = async (e) => {
-  e.preventDefault();
-  if (!profileImage || !user) return alert("Select an image first");
+    e.preventDefault();
+    if (!profileImage || !user) return alert("Select an image first");
 
-  const storage = getStorage();
-  const fileRef = ref(storage, `avatars/${user.uid}`);
-  await uploadBytes(fileRef, profileImage);
+    const storage = getStorage();
+    const fileRef = ref(storage, `avatars/${user.uid}`);
+    await uploadBytes(fileRef, profileImage);
 
-  const photoURL = await getDownloadURL(fileRef);
-  await updateProfile(auth.currentUser, { photoURL });
+    const photoURL = await getDownloadURL(fileRef);
+    await updateProfile(auth.currentUser, { photoURL });
 
-  await auth.currentUser.reload();
-  const refreshedUser = auth.currentUser;
-  setUser({ ...refreshedUser });
+    await auth.currentUser.reload();
+    const refreshedUser = auth.currentUser;
+    setUser({ ...refreshedUser });
 
-  alert('Profile photo updated!');
-};
+    alert('Profile photo updated!');
+  };
 
   if (user) {
     return (
-  <div className="auth-container">
-    <h2>Welcome, {user.displayName || user.email}</h2>
-    {user.photoURL && <img src={user.photoURL} alt="Profile" className="navbar-avatar" />}
-    <p>Email: {user.email}</p>
-    <button onClick={handleLogout}>Log Out</button>
+      <div className="auth-container">
+        <h2>Welcome, {user.displayName || user.email}</h2>
+        {user.photoURL && <img src={user.photoURL} alt="Profile" className="navbar-avatar" />}
+        <p>Email: {user.email}</p>
+        <button onClick={handleLogout}>Log Out</button>
 
-    {/* Profile photo upload (separate form) */}
-    <div style={{ marginTop: '1rem' }}>
-      <input type="file" accept="image/*" onChange={(e) => setProfileImage(e.target.files[0])} />
-      <button onClick={handleProfileUpload}>Upload Profile Photo</button>
-    </div>
+        <div style={{ marginTop: '1rem' }}>
+          <input type="file" accept="image/*" onChange={(e) => setProfileImage(e.target.files[0])} />
+          <button onClick={handleProfileUpload}>Upload Profile Photo</button>
+        </div>
 
-    {/* Shipping details form */}
-    <form onSubmit={handleDetailsSubmit} className="user-details-form">
-      <h3>Shipping Information</h3>
-      <input type="text" name="fullName" placeholder="Full Name" onChange={handleChange} required />
-      <input type="tel" name="phone" placeholder="Phone Number" onChange={handleChange} />
-      <input type="text" name="address1" placeholder="Address Line 1" onChange={handleChange} required />
-      <input type="text" name="address2" placeholder="Address Line 2" onChange={handleChange} />
-      <input type="text" name="city" placeholder="City" onChange={handleChange} required />
-      <input type="text" name="state" placeholder="State / Province" onChange={handleChange} />
-      <input type="text" name="postalCode" placeholder="Postal / Zip Code" onChange={handleChange} required />
-      <input type="text" name="country" placeholder="Country" onChange={handleChange} required />
-      <button type="submit">Save Details</button>
-    </form>
-  </div>
-);
+        <form onSubmit={handleDetailsSubmit} className="user-details-form">
+          <h3>Shipping Information</h3>
+          <input type="text" name="fullName" placeholder="Full Name" value={details.fullName} onChange={handleChange} required />
+          <input type="tel" name="phone" placeholder="Phone Number" value={details.phone} onChange={handleChange} />
+          <input type="text" name="address1" placeholder="Address Line 1" value={details.address1} onChange={handleChange} required />
+          <input type="text" name="address2" placeholder="Address Line 2" value={details.address2} onChange={handleChange} />
+          <input type="text" name="city" placeholder="City" value={details.city} onChange={handleChange} required />
+          <input type="text" name="state" placeholder="State / Province" value={details.state} onChange={handleChange} />
+          <input type="text" name="postalCode" placeholder="Postal / Zip Code" value={details.postalCode} onChange={handleChange} required />
+          <input type="text" name="country" placeholder="Country" value={details.country} onChange={handleChange} required />
+          <button type="submit">Save Details</button>
+        </form>
+      </div>
+    );
   }
 
   return (
