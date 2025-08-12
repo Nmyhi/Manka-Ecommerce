@@ -16,7 +16,7 @@ import './Auth.css';
 const db = getFirestore();
 
 const Account = () => {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +35,6 @@ const Account = () => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
         const docRef = doc(db, 'users', currentUser.uid);
         const docSnap = await getDoc(docRef);
@@ -45,7 +44,7 @@ const Account = () => {
       }
     });
     return () => unsubscribe();
-  }, [setUser]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -98,11 +97,7 @@ const Account = () => {
     const photoURL = await getDownloadURL(fileRef);
     await updateProfile(auth.currentUser, { photoURL });
 
-    await auth.currentUser.reload();
-    const refreshedUser = auth.currentUser;
-    setUser({ ...refreshedUser });
-
-    alert('Profile photo updated!');
+    window.location.reload(); // ⬅ refresh to reflect new avatar
   };
 
   if (user) {
