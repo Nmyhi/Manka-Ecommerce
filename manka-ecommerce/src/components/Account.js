@@ -96,6 +96,7 @@ const Account = () => {
 
     const photoURL = await getDownloadURL(fileRef);
     await updateProfile(auth.currentUser, { photoURL });
+    alert("Avatar is successfully uploaded!");
 
     window.location.reload(); // ⬅ refresh to reflect new avatar
   };

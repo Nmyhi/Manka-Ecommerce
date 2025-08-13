@@ -14,7 +14,7 @@ const Admin = () => {
     price: '',
     category: '',
   });
-  const [imageFile, setImageFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
 
   const handleChange = (e) => {
     setListing({ ...listing, [e.target.name]: e.target.value });
@@ -22,24 +22,29 @@ const Admin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user || !imageFile) return alert('User must be logged in and image selected.');
+    if (!user || imageFiles.length === 0) return alert('User must be logged in and at least one image selected.');
 
     try {
       const storage = getStorage();
-      const imageRef = ref(storage, `listings/${Date.now()}_${imageFile.name}`);
-      await uploadBytes(imageRef, imageFile);
-      const imageUrl = await getDownloadURL(imageRef);
+      const imageUrls = [];
+
+      for (const file of imageFiles) {
+        const imageRef = ref(storage, `listings/${Date.now()}_${file.name}`);
+        await uploadBytes(imageRef, file);
+        const url = await getDownloadURL(imageRef);
+        imageUrls.push(url);
+      }
 
       await addDoc(collection(db, 'listings'), {
         ...listing,
-        imageUrl,
+        imageUrls, // Save array of image URLs
         createdAt: serverTimestamp(),
         createdBy: user.uid,
       });
 
       alert('Listing uploaded successfully');
       setListing({ title: '', description: '', price: '', category: '' });
-      setImageFile(null);
+      setImageFiles([]);
     } catch (err) {
       console.error(err);
       alert('Error uploading listing');
@@ -54,7 +59,7 @@ const Admin = () => {
         <textarea name="description" placeholder="Description" value={listing.description} onChange={handleChange} required />
         <input name="price" placeholder="Price" value={listing.price} onChange={handleChange} required type="number" />
         <input name="category" placeholder="Category" value={listing.category} onChange={handleChange} required />
-        <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files[0])} required />
+        <input type="file" accept="image/*" multiple onChange={(e) => setImageFiles(Array.from(e.target.files))} required />
         <button type="submit">Upload Listing</button>
       </form>
     </div>
