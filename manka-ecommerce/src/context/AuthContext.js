@@ -13,17 +13,25 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log("Auth change:", { firebaseUser });
+
+      setUser(firebaseUser);
+
       if (firebaseUser) {
-        const userRef = doc(db, 'users', firebaseUser.uid);
-        getDoc(userRef).then(userSnap => {
+        try {
+          const userRef = doc(db, 'users', firebaseUser.uid);
+          const userSnap = await getDoc(userRef);
           const role = userSnap.exists() ? userSnap.data().role : null;
+          console.log("User role:", role);
           setIsAdmin(role === 'admin');
-        });
-        setUser(firebaseUser);
+        } catch (err) {
+          console.error("Error fetching role:", err);
+          setIsAdmin(false);
+        }
       } else {
-        setUser(null);
         setIsAdmin(false);
       }
+
       setLoading(false);
     });
 
