@@ -1,7 +1,23 @@
 // src/components/Admin.js
-import React, { useState } from 'react';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
+} from 'firebase/storage';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+  query,
+  where,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import './Admin.css';
@@ -15,6 +31,23 @@ const Admin = () => {
     category: '',
   });
   const [imageFiles, setImageFiles] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+
+  // ✅ Refactored fetchListings using useCallback
+  const fetchListings = useCallback(async () => {
+    if (!user?.uid) return;
+    const q = query(collection(db, 'listings'), where('createdBy', '==', user.uid));
+    const snapshot = await getDocs(q);
+    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setListings(data);
+  }, [user?.uid]);
+
+  // 🔄 Fetch listings on mount or when user changes
+  useEffect(() => {
+    fetchListings();
+  }, [fetchListings]);
 
   const handleChange = (e) => {
     setListing({ ...listing, [e.target.name]: e.target.value });
@@ -22,32 +55,84 @@ const Admin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user || imageFiles.length === 0) return alert('User must be logged in and at least one image selected.');
+    if (!user || imageFiles.length === 0) return alert('Must be logged in with image(s) selected.');
 
     try {
       const storage = getStorage();
       const imageUrls = [];
 
       for (const file of imageFiles) {
-        const imageRef = ref(storage, `listings/${Date.now()}_${file.name}`);
-        await uploadBytes(imageRef, file);
-        const url = await getDownloadURL(imageRef);
+        const imgRef = storageRef(storage, `listings/${Date.now()}_${file.name}`);
+        await uploadBytes(imgRef, file);
+        const url = await getDownloadURL(imgRef);
         imageUrls.push(url);
       }
 
       await addDoc(collection(db, 'listings'), {
         ...listing,
-        imageUrls, // Save array of image URLs
+        imageUrls,
         createdAt: serverTimestamp(),
         createdBy: user.uid,
       });
 
-      alert('Listing uploaded successfully');
+      alert('Listing uploaded.');
       setListing({ title: '', description: '', price: '', category: '' });
       setImageFiles([]);
+      fetchListings();
     } catch (err) {
       console.error(err);
       alert('Error uploading listing');
+    }
+  };
+
+  const handleEditStart = (listing) => {
+    setEditingId(listing.id);
+    setEditForm({ ...listing });
+  };
+
+  const handleEditChange = (e) => {
+    setEditForm({ ...editForm, [e.target.name]: e.target.value });
+  };
+
+  const handleEditSave = async () => {
+    try {
+      const docRef = doc(db, 'listings', editingId);
+      await updateDoc(docRef, {
+        title: editForm.title,
+        description: editForm.description,
+        price: editForm.price,
+        category: editForm.category,
+      });
+      alert('Listing updated');
+      setEditingId(null);
+      fetchListings();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update');
+    }
+  };
+
+  const handleDelete = async (listing) => {
+    const confirm = window.confirm('Delete this listing?');
+    if (!confirm) return;
+
+    try {
+      const docRef = doc(db, 'listings', listing.id);
+      await deleteDoc(docRef);
+
+      const storage = getStorage();
+      for (const url of listing.imageUrls || []) {
+        const path = new URL(url).pathname.split('/o/')[1].split('?')[0];
+        const decodedPath = decodeURIComponent(path);
+        const imgRef = storageRef(storage, decodedPath);
+        await deleteObject(imgRef);
+      }
+
+      alert('Listing deleted');
+      fetchListings();
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting listing');
     }
   };
 
@@ -62,6 +147,35 @@ const Admin = () => {
         <input type="file" accept="image/*" multiple onChange={(e) => setImageFiles(Array.from(e.target.files))} required />
         <button type="submit">Upload Listing</button>
       </form>
+
+      <h2>Your Listings</h2>
+      <div className="listing-grid">
+        {listings.map(list => (
+          <div key={list.id} className="listing-card">
+            {editingId === list.id ? (
+              <>
+                <input name="title" value={editForm.title} onChange={handleEditChange} />
+                <textarea name="description" value={editForm.description} onChange={handleEditChange} />
+                <input name="price" type="number" value={editForm.price} onChange={handleEditChange} />
+                <input name="category" value={editForm.category} onChange={handleEditChange} />
+                <button onClick={handleEditSave}>Save</button>
+                <button onClick={() => setEditingId(null)}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <img src={list.imageUrls?.[0]} alt={list.title} />
+                <h3>{list.title}</h3>
+                <p>£{list.price}</p>
+                <p>{list.category}</p>
+                <div className="admin-buttons">
+                  <button onClick={() => handleEditStart(list)}>Edit</button>
+                  <button onClick={() => handleDelete(list)}>Delete</button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
