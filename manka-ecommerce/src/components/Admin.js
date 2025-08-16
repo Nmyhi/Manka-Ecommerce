@@ -35,16 +35,18 @@ const Admin = () => {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
 
-  // ✅ Refactored fetchListings using useCallback
   const fetchListings = useCallback(async () => {
     if (!user?.uid) return;
-    const q = query(collection(db, 'listings'), where('createdBy', '==', user.uid));
-    const snapshot = await getDocs(q);
-    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setListings(data);
+    try {
+      const q = query(collection(db, 'listings'), where('createdBy', '==', user.uid));
+      const snapshot = await getDocs(q);
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setListings(data);
+    } catch (err) {
+      console.error('Error fetching listings:', err.message);
+    }
   }, [user?.uid]);
 
-  // 🔄 Fetch listings on mount or when user changes
   useEffect(() => {
     fetchListings();
   }, [fetchListings]);
@@ -55,7 +57,19 @@ const Admin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user || imageFiles.length === 0) return alert('Must be logged in with image(s) selected.');
+
+    if (!user?.uid) {
+      alert('User not authenticated.');
+      console.error('Submission blocked: user not authenticated.');
+      return;
+    }
+
+    if (imageFiles.length === 0) {
+      alert('Please select at least one image.');
+      return;
+    }
+
+    console.log('Attempting to upload listing as user:', user.uid);
 
     try {
       const storage = getStorage();
@@ -80,8 +94,8 @@ const Admin = () => {
       setImageFiles([]);
       fetchListings();
     } catch (err) {
-      console.error(err);
-      alert('Error uploading listing');
+      console.error('Error uploading listing:', err.message);
+      alert(`Upload failed: ${err.message}`);
     }
   };
 

@@ -1,7 +1,32 @@
-import React from 'react';
+// src/pages/Home.js
+import React, { useEffect, useState } from 'react';
+import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Link } from 'react-router-dom';
 import './Home.css';
 
 const Home = () => {
+  const [featured, setFeatured] = useState([]);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const q = query(
+          collection(db, 'listings'),
+          where('featured', '==', true),
+          limit(6) // limit to 6 featured items
+        );
+        const snap = await getDocs(q);
+        const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setFeatured(data);
+      } catch (err) {
+        console.error('Error fetching featured listings:', err.message);
+      }
+    };
+
+    fetchFeatured();
+  }, []);
+
   return (
     <div className="home">
       <header className="home-hero">
@@ -12,10 +37,17 @@ const Home = () => {
       <section className="home-section">
         <h2>Featured Products</h2>
         <div className="product-grid">
-          {/* Placeholder product cards */}
-          <div className="product-card">Crochet Bunny</div>
-          <div className="product-card">Mini Whale</div>
-          <div className="product-card">Baby Octopus</div>
+          {featured.length > 0 ? (
+            featured.map(prod => (
+              <Link to={`/product/${prod.id}`} key={prod.id} className="product-card">
+                <img src={prod.imageUrls?.[0] || 'placeholder.jpg'} alt={prod.title} />
+                <h3>{prod.title}</h3>
+                <p>£{prod.price}</p>
+              </Link>
+            ))
+          ) : (
+            <p>No featured listings yet.</p>
+          )}
         </div>
       </section>
 
