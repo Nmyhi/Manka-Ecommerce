@@ -59,3 +59,33 @@
 .load-more-btn:hover {
   background-color: #555;
 }
+
+.add-to-cart-btn {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #333;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.cart-feedback {
+  background-color: #e0ffe0;
+  border: 1px solid #0c0;
+  padding: 10px;
+  margin: 10px auto;
+  text-align: center;
+  border-radius: 6px;
+  font-weight: bold;
+  animation: fadeInOut 2s ease-in-out;
+  max-width: 500px;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}

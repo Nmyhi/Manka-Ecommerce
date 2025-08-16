@@ -1,5 +1,4 @@
-// src/pages/Shop.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   collection,
@@ -11,6 +10,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { db } from '../firebase';
+import { useCart } from '../context/CartContext';
 import './Shop.css';
 
 const Shop = () => {
@@ -20,56 +20,82 @@ const Shop = () => {
   const [lastDoc, setLastDoc] = useState(null);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [feedback, setFeedback] = useState('');
+
+  const { addToCart } = useCart();
 
   const fetchCategories = async () => {
     try {
       const snapshot = await getDocs(collection(db, 'listings'));
       const allCategories = snapshot.docs
         .map(doc => doc.data().category)
-        .filter(Boolean); // remove undefined/null
+        .filter(Boolean);
       const uniqueCategories = [...new Set(allCategories)];
       setCategories(uniqueCategories);
     } catch (err) {
       console.error('Error fetching categories:', err);
-      setCategories([]); // fallback
+      setCategories([]);
     }
   };
 
-  const fetchListings = async (reset = false) => {
-    setLoading(true);
-    let q = collection(db, 'listings');
+  // ✅ lastDoc passed as argument instead of dependency
+  const fetchListings = useCallback(
+    async (reset = false, startAfterDoc = null) => {
+      setLoading(true);
 
-    if (category !== 'All') {
-      q = query(q, where('category', '==', category));
-    }
+      try {
+        let q = collection(db, 'listings');
 
-    if (sort === 'priceAsc') {
-      q = query(q, orderBy('price', 'asc'));
-    } else if (sort === 'priceDesc') {
-      q = query(q, orderBy('price', 'desc'));
-    }
+        if (category !== 'All') {
+          q = query(q, where('category', '==', category));
+        }
 
-    if (lastDoc && !reset) {
-      q = query(q, limit(10), startAfter(lastDoc));
-    } else {
-      q = query(q, limit(10));
-    }
+        if (sort === 'priceAsc') {
+          q = query(q, orderBy('price', 'asc'));
+        } else if (sort === 'priceDesc') {
+          q = query(q, orderBy('price', 'desc'));
+        }
 
-    const snap = await getDocs(q);
-    const listings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setProducts(reset ? listings : [...products, ...listings]);
-    setLastDoc(snap.docs[snap.docs.length - 1]);
-    setLoading(false);
-  };
+        if (startAfterDoc && !reset) {
+          q = query(q, limit(10), startAfter(startAfterDoc));
+        } else {
+          q = query(q, limit(10));
+        }
+
+        const snap = await getDocs(q);
+        const listings = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        setProducts(reset ? listings : prev => [...prev, ...listings]);
+        setLastDoc(snap.docs[snap.docs.length - 1]);
+      } catch (err) {
+        console.error('Error fetching listings:', err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [category, sort] // ✅ lastDoc removed
+  );
 
   useEffect(() => {
-    fetchCategories(); // only once on mount
+    fetchCategories();
   }, []);
 
   useEffect(() => {
-    fetchListings(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, sort]);
+    // ✅ only triggers on sort/category change
+    fetchListings(true, null);
+  }, [category, sort, fetchListings]);
+
+  const handleAddToCart = (product) => {
+    addToCart({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      imageUrls: product.imageUrls,
+      quantity: 1,
+    });
+    setFeedback(`✔️ ${product.title} added to cart`);
+    setTimeout(() => setFeedback(''), 2000);
+  };
 
   return (
     <div className="shop-container">
@@ -89,21 +115,35 @@ const Shop = () => {
         </select>
       </div>
 
+      {feedback && <div className="cart-feedback">{feedback}</div>}
+
       <div className="products-grid">
         {products.map(prod => (
-          <Link to={`/product/${prod.id}`} key={prod.id} className="product-card">
-            <img src={prod.imageUrls?.[0] || 'placeholder.jpg'} alt={prod.title} />
-            <h3>{prod.title}</h3>
-            <p>£{prod.price}</p>
-          </Link>
+          <div key={prod.id} className="product-card">
+            <Link to={`/product/${prod.id}`}>
+              <img src={prod.imageUrls?.[0] || 'placeholder.jpg'} alt={prod.title} />
+              <h3>{prod.title}</h3>
+              <p>£{prod.price}</p>
+            </Link>
+            <button
+              className="add-to-cart-btn"
+              onClick={() => handleAddToCart(prod)}
+            >
+              Add to Cart
+            </button>
+          </div>
         ))}
       </div>
 
       {lastDoc && !loading && (
-        <button onClick={() => fetchListings()} className="load-more-btn">
+        <button
+          onClick={() => fetchListings(false, lastDoc)}
+          className="load-more-btn"
+        >
           Load More
         </button>
       )}
+
       {loading && <p>Loading...</p>}
     </div>
   );

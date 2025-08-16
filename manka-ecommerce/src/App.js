@@ -9,12 +9,13 @@ import Shop from './pages/Shop';
 import Account from './components/Account';
 import Admin from './components/Admin';
 import { useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext'; // ✅ import this
 
 const ProtectedAdminRoute = ({ children }) => {
   const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>; // Or a spinner/progress indicator
+    return <div>Loading...</div>;
   }
 
   if (!user || !isAdmin) {
@@ -26,25 +27,27 @@ const ProtectedAdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/account" element={<Account />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/shop" element={<Shop />} />
-        <Route
-          path="/admin"
-          element={
-            <ProtectedAdminRoute>
-              <Admin />
-            </ProtectedAdminRoute>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+    <CartProvider> {/* ✅ Cart context available everywhere */}
+      <BrowserRouter>
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/shop" element={<Shop />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedAdminRoute>
+                <Admin />
+              </ProtectedAdminRoute>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
+    </CartProvider>
   );
 }
 
