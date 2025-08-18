@@ -1,10 +1,11 @@
+// src/pages/Cart.js
 import React from 'react';
 import { useCart } from '../context/CartContext';
 import { Link } from 'react-router-dom';
 import './Cart.css';
 
 const Cart = () => {
-  const { cart, removeFromCart, clearCart } = useCart();
+  const { cart = [], removeFromCart, clearCart } = useCart();
 
   const total = cart.reduce((sum, item) => sum + item.price * (item.quantity || 1), 0);
 
