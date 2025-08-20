@@ -45,7 +45,7 @@ const ProductDetail = () => {
         </div>
         <div className="product-info">
           <h1>{product.title}</h1>
-          <p className="product-price">£{product.price}</p>
+          <p className="product-price">{product.price}Ft</p>
           <p className="product-description">{product.description}</p>
           {/* Add "Add to cart" or "Buy now" here later */}
         </div>

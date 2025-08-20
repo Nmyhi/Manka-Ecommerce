@@ -27,7 +27,7 @@ const Cart = () => {
             <img src={item.imageUrls?.[0]} alt={item.title} />
             <div>
               <h3>{item.title}</h3>
-              <p>£{item.price}</p>
+              <p>{item.price}Ft</p>
               <button onClick={() => removeFromCart(item.id)}>Remove</button>
             </div>
           </div>
@@ -35,7 +35,7 @@ const Cart = () => {
       </div>
 
       <div className="cart-summary">
-        <h3>Total: £{total.toFixed(2)}</h3>
+        <h3>Total: {total.toFixed(2)}Ft</h3>
         <button className="clear-cart-btn" onClick={clearCart}>Clear Cart</button>
         <Link to="/checkout">
           <button className="checkout-btn">Proceed to Checkout</button>

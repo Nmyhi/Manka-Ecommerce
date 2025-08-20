@@ -1,8 +1,15 @@
-// ✅ Success.js - in /src/pages
-import React from 'react';
+// src/pages/Success.js
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
 
 const Success = () => {
+  const { clearCart } = useCart();
+
+  useEffect(() => {
+    clearCart(); // ✅ Clear the cart on successful checkout
+  }, [clearCart]);
+
   return (
     <div className="success-page">
       <h1>Payment Successful 🎉</h1>

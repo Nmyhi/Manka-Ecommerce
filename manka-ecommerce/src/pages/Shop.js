@@ -123,7 +123,7 @@ const Shop = () => {
             <Link to={`/product/${prod.id}`}>
               <img src={prod.imageUrls?.[0] || 'placeholder.jpg'} alt={prod.title} />
               <h3>{prod.title}</h3>
-              <p>£{prod.price}</p>
+              <p>{prod.price}Ft</p>
             </Link>
             <button
               className="add-to-cart-btn"

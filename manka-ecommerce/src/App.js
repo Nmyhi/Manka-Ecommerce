@@ -6,10 +6,11 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Shop from './pages/Shop';
+import Success from './pages/Success'; // ✅ Add this line
 import Account from './components/Account';
 import Admin from './components/Admin';
 import { useAuth } from './context/AuthContext';
-import { CartProvider } from './context/CartContext'; // ✅ import this
+import { CartProvider } from './context/CartContext';
 
 const ProtectedAdminRoute = ({ children }) => {
   const { user, isAdmin, loading } = useAuth();
@@ -27,7 +28,7 @@ const ProtectedAdminRoute = ({ children }) => {
 
 function App() {
   return (
-    <CartProvider> {/* ✅ Cart context available everywhere */}
+    <CartProvider>
       <BrowserRouter>
         <Navbar />
         <Routes>
@@ -37,6 +38,7 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/success" element={<Success />} /> {/* ✅ Added success route */}
           <Route
             path="/admin"
             element={
