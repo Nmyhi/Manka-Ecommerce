@@ -11,7 +11,7 @@ const Checkout = () => {
     const initiateStripeCheckout = async () => {
       try {
         const response = await fetch(
-          'https://5000-nmyhi-mankaecommerce-vkkgd1216bn.ws-eu121.gitpod.io/create-checkout-session', // ✅ Corrected path
+          'https://super-pancake-4446674gppvhq666-5000.app.github.dev/create-checkout-session', // ✅ Corrected path
           {
             method: 'POST',
             headers: {
